@@ -1,13 +1,171 @@
-int var;
-void setup() {
-  // put your setup code here, to run once:
-pinMode(8,INPUT);
+##Full code of my old arduino-machine.
+
+// Clockwise and counter-clockwise definitions.
+// Depending on how you wired your motors, you may need to swap.
+#define FORWARD 0
+#define REVERSE 1
+// Motor definitions to make life easier:
+#define MOTOR_RIGHT 0
+#define MOTOR_LEFT 1
+// Pin Assignments //
+//Default pins:
+#define DIRA 12 // Direction control for motor A
+#define PWMA 3 // PWM control (speed) for motor A
+#define DIRB 13 // Direction control for motor B
+#define PWMB 11 // PWM control (speed) for motor B
+#define SRIGHT 8 // Sensore caduta destro
+#define SLEFT 10 // Sensore caduta sinistro
+#define DESTRA 0
+#define SINISTRA 1
+// PING
+#define PINGPIN 2
+//Servo
+#include <Servo.h>
+Servo myservo; // create servo object to control a servo
+void setup()
+{
+// Setup Motori
+setupArdumoto(); // Set all pins as outputs
+pinMode(SRIGHT,INPUT);
+pinMode(SLEFT,INPUT);
 Serial.begin(9600); // opens serial port, sets data rate to 9600 bps
 }
+void loop()
+{
+int cadutaDestra = digitalRead (SRIGHT);
+int cadutaSinistra = digitalRead (SLEFT);
+int distanza = ping();
+Serial.print(cadutaDestra);
+Serial.print("\t"); //serve per mettere una tabulazione tra le due
+scritture
+Serial.println(cadutaSinistra);
+Serial.println(distanza);
+if( cadutaDestra == 0){
+ruota(SINISTRA);
+}
 
-void loop() {
-  // put your main code here, to run repeatedly:
-var = digitalRead(8);
-Serial.println(var);
-delay(1);
+11
+
+if(cadutaSinistra == 0){
+ruota(DESTRA);
+}
+if(distanza<25){
+// Fermo tutto
+stopArdumoto(MOTOR_RIGHT); // STOP motor A
+stopArdumoto(MOTOR_LEFT); // STOP motor B
+// Segnalo allarme
+allarme();
+allarme();
+}
+Serial.println("Avanti tutta!");
+driveArdumoto(MOTOR_RIGHT, FORWARD, 200);
+driveArdumoto(MOTOR_LEFT, FORWARD, 200);
+}
+
+// driveArdumoto drives 'motor' in 'dir' direction at 'spd' speed
+void driveArdumoto(byte motor, byte dir, byte spd)
+{
+if (motor == MOTOR_RIGHT)
+{
+digitalWrite(DIRA, dir);
+analogWrite(PWMA, spd);
+}
+else if (motor == MOTOR_LEFT)
+{
+digitalWrite(DIRB, dir);
+analogWrite(PWMB, spd);
+}
+}
+// stopArdumoto makes a motor stop
+void stopArdumoto(byte motor)
+{
+driveArdumoto(motor, 0, 0);
+}
+// setupArdumoto initialize all pins
+void setupArdumoto()
+{
+// All pins should be setup as outputs:
+pinMode(PWMA, OUTPUT);
+pinMode(PWMB, OUTPUT);
+pinMode(DIRA, OUTPUT);
+pinMode(DIRB, OUTPUT);
+// Initialize all pins as low:
+digitalWrite(PWMA, LOW);
+digitalWrite(PWMB, LOW);
+digitalWrite(DIRA, LOW);
+digitalWrite(DIRB, LOW);
+
+12
+
+}
+void ruota(byte direzione){
+// Fermo tutto
+stopArdumoto(MOTOR_RIGHT); // STOP motor A
+stopArdumoto(MOTOR_LEFT); // STOP motor B
+// Vado indietro
+driveArdumoto(MOTOR_RIGHT, REVERSE, 200);
+driveArdumoto(MOTOR_LEFT, REVERSE, 200);
+delay(800);
+if(direzione == DESTRA){
+Serial.println("Ruota a destra");
+driveArdumoto(MOTOR_RIGHT, REVERSE, 200);
+driveArdumoto(MOTOR_LEFT, FORWARD, 200);
+delay(600);
+}
+else{
+Serial.println("Ruota a sinistra");
+driveArdumoto(MOTOR_RIGHT, FORWARD, 200);
+driveArdumoto(MOTOR_LEFT, REVERSE, 200);
+delay(600);
+}
+}
+int ping()
+{
+// establish variables for duration of the ping, and the distance
+result
+// in inches and centimeters:
+long duration, inches, cm;
+// The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
+// Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+pinMode(PINGPIN, OUTPUT);
+digitalWrite(PINGPIN, LOW);
+delayMicroseconds(2);
+digitalWrite(PINGPIN, HIGH);
+delayMicroseconds(5);
+digitalWrite(PINGPIN, LOW);
+// The same pin is used to read the signal from the PING))): a HIGH
+pulse
+// whose duration is the time (in microseconds) from the sending of the
+ping
+// to the reception of its echo off of an object.
+pinMode(PINGPIN, INPUT);
+duration = pulseIn(PINGPIN, HIGH);
+// The speed of sound is 340 m/s or 29 microseconds per centimeter.
+// The ping travels out and back, so to find the distance of the object
+we
+// take half of the distance travelled.
+return duration / 29 / 2;
+}
+void allarme(){
+
+13
+
+myservo.attach(9);
+int pos = 0;
+for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180
+degrees
+// in steps of 1 degree
+myservo.write(pos); // tell servo to go to position in
+variable 'pos'
+delay(5); // waits 15ms for the servo to reach
+the position
+}
+for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0
+degrees
+myservo.write(pos); // tell servo to go to position in
+variable 'pos'
+delay(5); // waits 15ms for the servo to reach
+the position
+myservo.detach();
+}
 }
